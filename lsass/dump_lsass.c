@@ -169,7 +169,7 @@ void go(char* argc, int len) {
 
 
 	// Close Handles
-	KERNEL32$PssFreeSnapshot(KERNEL32$GetCurrentProcess, (HPSS)snapshotHandle);
+	KERNEL32$PssFreeSnapshot(KERNEL32$GetCurrentProcess(), (HPSS)snapshotHandle);
 	KERNEL32$CloseHandle(outFile);
 	KERNEL32$CloseHandle(processHandle);
 
