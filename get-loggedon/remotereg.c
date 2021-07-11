@@ -13,13 +13,12 @@ WINADVAPI WINBOOL WINAPI ADVAPI32$LookupAccountSidA(LPCSTR lpSystemName, PSID Si
 
  void go(char * args, int len){
 
-        datap  parser;
-        LPWSTR computer = NULL;
+  datap  parser;
+  LPWSTR computer = NULL;
+  BeaconDataParse(&parser, args, len);
+  computer  = (LPWSTR)BeaconDataExtract(&parser, NULL);
 
-        BeaconDataParse(&parser, args, len);
-        computer  = (LPWSTR)BeaconDataExtract(&parser, NULL);
-
-   LONG lRetVal;
+  LONG lRetVal;
   HKEY  hKey;
   lRetVal = ADVAPI32$RegConnectRegistryW(computer, HKEY_USERS, &hKey);
 
@@ -54,15 +53,11 @@ WINADVAPI WINBOOL WINAPI ADVAPI32$LookupAccountSidA(LPCSTR lpSystemName, PSID Si
       dwSubKeyIndex++;
       dwSubKeyLength = _MAX_FNAME;
       
-if (MSVCRT$strstr(szSubKey, "S-1-5-21-") != NULL) {
-
+  if (MSVCRT$strstr(szSubKey, "S-1-5-21-") != NULL) {
 
   ADVAPI32$ConvertStringSidToSidA(szSubKey, &sid);
-
-
- ADVAPI32$LookupAccountSidA(NULL, sid, lpName, &dwSize, lpDomain, &dwSize, &SNU);
-  
-      BeaconPrintf(CALLBACK_OUTPUT, "[*] User \"%s\\%s\" is Logged on - \"%ws\"", lpDomain, lpName, computer);
+  ADVAPI32$LookupAccountSidA(NULL, sid, lpName, &dwSize, lpDomain, &dwSize, &SNU);
+  BeaconPrintf(CALLBACK_OUTPUT, "[*] User \"%s\\%s\" is Logged on - \"%ws\"", lpDomain, lpName, computer);
 
 }
 }
